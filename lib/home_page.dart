@@ -19,14 +19,14 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final TextEditingController _searchController = TextEditingController();
   bool isValidTypeAll = true;
-  bool isValidcolor = true;
+  bool isFullList = true;
 
   @override
   void initState() {
     super.initState();
   }
 
-  void _getType(String type, bool color) {
+  void _getType(String type) {
     print(type);
     var colorType = type;
     Common().getType = type;
@@ -35,7 +35,7 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  void _getAllTypes(bool isValidAll, bool color) {
+  void _getAllTypes(bool isValidAll) {
     print(isValidAll);
     setState(() {
       if (isValidAll == true) {
@@ -47,9 +47,11 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  List<DocumentSnapshot> _searchResults = [];
+  List<dynamic> _searchResults = [];
 
   void _performSearch(String query) {
+    print('_performSearch');
+    _searchResults = [];
     final CollectionReference productRef =
         FirebaseFirestore.instance.collection('products');
 
@@ -58,9 +60,14 @@ class _HomePageState extends State<HomePage> {
         .where('name', isLessThanOrEqualTo: query + '\uf8ff')
         .get()
         .then((QuerySnapshot snapshot) {
-      snapshot.docs.forEach((DocumentSnapshot document) {
-        print(document.data());
-      });
+      if (snapshot.size != 0) {
+        setState(() {
+          _searchResults.addAll(snapshot.docs);
+          print(_searchResults[0].data()!['name']);
+          print(_searchResults[0].data().runtimeType);
+          isFullList = false;
+        });
+      }
     });
   }
 
@@ -142,7 +149,6 @@ class _HomePageState extends State<HomePage> {
               child: IconButton(
                 icon: const Icon(Icons.shopping_cart),
                 onPressed: () {
-                  // print(Common().listProduct.length);
                   order();
                 },
               ),
@@ -170,7 +176,8 @@ class _HomePageState extends State<HomePage> {
           padding: const EdgeInsets.symmetric(horizontal: 15),
           child: TextField(
             controller: _searchController,
-            onChanged: (value) => _performSearch(value),
+            // onChanged: (value) => _performSearch(value),
+            onSubmitted: (value) => _performSearch(value),
             cursorColor: Colors.grey,
             decoration: const InputDecoration(
               fillColor: Colors.white,
@@ -255,7 +262,7 @@ class _HomePageState extends State<HomePage> {
                                         width: 2, color: Colors.black),
                                   ),
                                   onPressed: () {
-                                    _getType(categoryName, isValidcolor);
+                                    _getType(categoryName);
                                   },
                                   child: Container(
                                     alignment: Alignment.center,
@@ -299,7 +306,7 @@ class _HomePageState extends State<HomePage> {
                                     width: 2, color: Colors.black),
                               ),
                               onPressed: () {
-                                _getAllTypes(isValidTypeAll, isValidcolor);
+                                _getAllTypes(isValidTypeAll);
                               },
                               child: Container(
                                 alignment: Alignment.center,
@@ -347,37 +354,129 @@ class _HomePageState extends State<HomePage> {
                   padding: const EdgeInsets.symmetric(
                     horizontal: 10.0,
                   ),
-                  child: StreamBuilder(
-                      stream: isValidTypeAll
-                          ? FirebaseFirestore.instance
-                              .collection("products")
-                              .limit(10)
-                              .snapshots()
-                          : FirebaseFirestore.instance
-                              .collection("products")
-                              .where("type", isEqualTo: Common().getType)
-                              .snapshots(),
-                      builder: (context, snapshot) {
-                        if (!snapshot.hasData) {
-                          return const Center(
-                            child: SizedBox(
-                              height: 50.0,
-                              width: 50.0,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 7.0,
+                  child: isFullList
+                      ? StreamBuilder(
+                          stream: isValidTypeAll
+                              ? FirebaseFirestore.instance
+                                  .collection("products")
+                                  .limit(10)
+                                  .snapshots()
+                              : FirebaseFirestore.instance
+                                  .collection("products")
+                                  .where("type", isEqualTo: Common().getType)
+                                  .snapshots(),
+                          builder: (context, snapshot) {
+                            if (!snapshot.hasData) {
+                              return const Center(
+                                child: SizedBox(
+                                  height: 50.0,
+                                  width: 50.0,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 7.0,
+                                  ),
+                                ),
+                              );
+                            }
+                            final items = snapshot.data!.docs;
+                            return GridView.builder(
+                              physics: const NeverScrollableScrollPhysics(),
+                              shrinkWrap: true,
+                              gridDelegate:
+                                  const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
                               ),
-                            ),
-                          );
-                        }
-                        final items = snapshot.data!.docs;
-                        return GridView.builder(
+                              itemCount: snapshot.data!.size,
+                              itemBuilder: (context, index) => Padding(
+                                padding: const EdgeInsets.all(4.0),
+                                child: Column(
+                                  children: [
+                                    GestureDetector(
+                                      onTap: () {
+                                        Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                DescriptionPage(
+                                                    item: items[index].data()),
+                                          ),
+                                        );
+                                      },
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          border: Border.all(
+                                            width: 3,
+                                            color: const Color.fromARGB(
+                                                255, 0, 0, 0),
+                                          ),
+                                          color: const Color.fromARGB(
+                                              255, 250, 249, 244),
+                                          borderRadius:
+                                              BorderRadius.circular(50.0),
+                                          boxShadow: const [
+                                            BoxShadow(
+                                              color: Colors.black12,
+                                              spreadRadius: 2,
+                                              blurRadius: 2,
+                                              offset: Offset(2, 2),
+                                            )
+                                          ],
+                                        ),
+                                        child: Column(
+                                          children: [
+                                            Padding(
+                                              padding: const EdgeInsets.only(
+                                                  top: 15.0),
+                                              child: Image.network(
+                                                items[index].data()["pic"],
+                                                width: 75,
+                                                height: 75,
+                                              ),
+                                            ),
+                                            const SizedBox(
+                                              height: 10.0,
+                                            ),
+                                            ListTile(
+                                              title: Text(
+                                                items[index].data()["name"],
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: GoogleFonts.prompt(
+                                                    fontWeight:
+                                                        FontWeight.w500),
+                                              ),
+                                              subtitle: Text(
+                                                  "${items[index].data()["price"]} Bath",
+                                                  style: GoogleFonts.prompt(
+                                                      fontWeight:
+                                                          FontWeight.w500)),
+                                              trailing: IconButton(
+                                                icon: const Icon(
+                                                  Icons.add_circle,
+                                                  size: 35,
+                                                ),
+                                                onPressed: () {
+                                                  addItem(items[index].data());
+                                                },
+                                                color: const Color.fromARGB(
+                                                    255, 187, 13, 13),
+                                              ),
+                                            )
+                                          ],
+                                        ),
+                                      ),
+                                    )
+                                  ],
+                                ),
+                              ),
+                            );
+                          })
+                      : GridView.builder(
                           physics: const NeverScrollableScrollPhysics(),
                           shrinkWrap: true,
                           gridDelegate:
                               const SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 2,
                           ),
-                          itemCount: snapshot.data!.size,
+                          itemCount: _searchResults.length,
                           itemBuilder: (context, index) => Padding(
                             padding: const EdgeInsets.all(4.0),
                             child: Column(
@@ -387,7 +486,7 @@ class _HomePageState extends State<HomePage> {
                                     Navigator.of(context).push(
                                       MaterialPageRoute(
                                         builder: (context) => DescriptionPage(
-                                            item: items[index].data()),
+                                            item: _searchResults[index].data()),
                                       ),
                                     );
                                   },
@@ -416,7 +515,7 @@ class _HomePageState extends State<HomePage> {
                                           padding:
                                               const EdgeInsets.only(top: 15.0),
                                           child: Image.network(
-                                            items[index].data()["pic"],
+                                            _searchResults[index].data()["pic"],
                                             width: 75,
                                             height: 75,
                                           ),
@@ -426,14 +525,15 @@ class _HomePageState extends State<HomePage> {
                                         ),
                                         ListTile(
                                           title: Text(
-                                            items[index].data()["name"],
+                                            _searchResults[index]
+                                                .data()["name"],
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
                                             style: GoogleFonts.prompt(
                                                 fontWeight: FontWeight.w500),
                                           ),
                                           subtitle: Text(
-                                              "${items[index].data()["price"]} Bath",
+                                              "${_searchResults[index].data()["price"]} Bath",
                                               style: GoogleFonts.prompt(
                                                   fontWeight: FontWeight.w500)),
                                           trailing: IconButton(
@@ -442,7 +542,8 @@ class _HomePageState extends State<HomePage> {
                                               size: 35,
                                             ),
                                             onPressed: () {
-                                              addItem(items[index].data());
+                                              addItem(
+                                                  _searchResults[index].data());
                                             },
                                             color: const Color.fromARGB(
                                                 255, 187, 13, 13),
@@ -455,8 +556,7 @@ class _HomePageState extends State<HomePage> {
                               ],
                             ),
                           ),
-                        );
-                      }),
+                        ),
                 )
               ],
             ),

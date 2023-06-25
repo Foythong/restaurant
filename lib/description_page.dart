@@ -112,7 +112,7 @@ class _DescriptionPageState extends State<DescriptionPage> {
           ),
         ),
         toolbarHeight: 70,
-        backgroundColor: Colors.amber[600],
+        backgroundColor: Colors.amber[700],
         elevation: 1,
         actions: [
           Padding(
