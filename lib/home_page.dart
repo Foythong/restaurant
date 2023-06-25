@@ -175,7 +175,6 @@ class _HomePageState extends State<HomePage> {
           padding: const EdgeInsets.symmetric(horizontal: 15),
           child: TextField(
             controller: _searchController,
-            // onChanged: (value) => _performSearch(value),
             onSubmitted: (value) => _performSearch(value),
             cursorColor: Colors.grey,
             decoration: const InputDecoration(
