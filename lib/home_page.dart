@@ -28,7 +28,6 @@ class _HomePageState extends State<HomePage> {
 
   void _getType(String type) {
     print(type);
-    var colorType = type;
     Common().getType = type;
     setState(() {
       isValidTypeAll = false;
